@@ -1,0 +1,38 @@
+function init(self)
+	-- Create Memory for wasmer
+	local wasm_memory, err = wasmer.memory.new {
+		minimum = 10, -- 640kB
+		--maximum = 100
+	}
+
+	print (tostring(wasm_memory)  .. " " .. #wasm_memory)
+	print (wasm_memory.grow)
+	wasm_memory:grow(1)
+	wasm_memory:write(8, "asdf")
+	print(wasm_memory[8])
+end
+
+function final(self)
+	-- Add finalization code here
+	-- Remove this function if not needed
+end
+
+function update(self, dt)
+	-- Add update code here
+	-- Remove this function if not needed
+end
+
+function on_message(self, message_id, message, sender)
+	-- Add message-handling code here
+	-- Remove this function if not needed
+end
+
+function on_input(self, action_id, action)
+	-- Add input-handling code here
+	-- Remove this function if not needed
+end
+
+function on_reload(self)
+	-- Add reload-handling code here
+	-- Remove this function if not needed
+end
