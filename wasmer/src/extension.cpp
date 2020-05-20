@@ -3,16 +3,12 @@
 #include "wasmer.hh"
 #include "extension.h"
 #include "memory.h"
-
-static int dummy(lua_State* L)
-{
-    return 0;
-}
+#include "import.h"
 
 static const luaL_reg extension_methods[] =
 {
-    {"dummy", dummy},
-    {0, 0}
+    { "import", import_module },
+    { 0, 0 }
 };
 
 void wasm_pusherror(lua_State* L)

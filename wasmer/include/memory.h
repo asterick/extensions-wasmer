@@ -6,5 +6,6 @@ struct WasmerMemory {
 	struct wasmer_memory_t* mem;
 };
 
-void register_memory(lua_State* L);
 WasmerMemory* to_memory (lua_State *L, int index);
+bool is_memory(lua_State* L, int index);
+void register_memory(lua_State* L);

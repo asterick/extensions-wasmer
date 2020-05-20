@@ -10,7 +10,8 @@ height = 640
 
 [project]
 title = wasmer
+custom_resources = data
 
 [library]
-include_dirs = myextension
+include_dirs = wasmer
 

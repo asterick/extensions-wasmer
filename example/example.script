@@ -10,6 +10,15 @@ function init(self)
 	wasm_memory:grow(1)
 	wasm_memory:write(8, "asdf")
 	print(wasm_memory[8])
+
+	bytes = sys.load_resource("/data/test.wasm")
+
+	print(#bytes)
+	
+	wasmer.import {
+		bytes,
+		env = { memory = wasm_memory }
+	}
 end
 
 function final(self)

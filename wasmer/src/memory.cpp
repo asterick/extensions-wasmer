@@ -4,6 +4,11 @@
 #include "extension.h"
 #include "memory.h"
 
+bool is_memory(lua_State* L, int index)
+{
+    return luaL_checkudata(L, index, MEMORY_NAME) != NULL;
+}
+
 WasmerMemory* to_memory (lua_State *L, int index)
 {
     WasmerMemory* mem = (WasmerMemory *)lua_touserdata(L, index);
