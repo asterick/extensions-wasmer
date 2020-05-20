@@ -39,6 +39,7 @@ void wasm_register_extension(lua_State* L)
     int top = lua_gettop(L);
 
     luaL_register(L, EXTENSION_NAME, extension_methods);
+    register_import(L);
 
     lua_pushstring(L, "memory");
     register_memory(L);
