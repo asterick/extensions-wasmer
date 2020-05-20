@@ -9,8 +9,9 @@ struct import_entry
 {
     const char* name;
     size_t name_length;
-    int reference;
-
+    int ref;
+    wasmer_import_export_kind tag;
+    
     union {
         WasmerMemory* memory;
         void* ptr;
@@ -28,14 +29,17 @@ struct import_module
     struct import_module* next;
 };
 
+// Copy a lua string into a buffer, and append a null-terminator
 static void alloc_copy(const void** buffer, size_t length) {
-    void* new_ptr = malloc(length);
+    void* new_ptr = malloc(length + 1);
     memcpy(new_ptr, *buffer, length);
+    ((uint8_t*)new_ptr)[length] = 0;
     *buffer = new_ptr;
 }
 
-wasmer_import_t* build_imports(lua_State* L, int index, int& count)
+int build_imports(lua_State* L, int index, wasmer_import_t*& imports, int*& refs)
 {
+    int count;
     struct import_module* modules = NULL;
     count = 0;
 
@@ -59,13 +63,15 @@ wasmer_import_t* build_imports(lua_State* L, int index, int& count)
             entry->name = luaL_checklstring(L, -2, &entry->name_length);
             entry->ptr = NULL;
                         
+            // TODO: HANDLE FUNC (C and Lua), TABLE, GLOBAL
             if (is_memory(L, -1)) {
                 // Reference and hold pointer
                 lua_pushvalue(L, -1);
+                entry->tag = wasmer_import_export_kind::WASM_MEMORY;
                 entry->ref = dmScript::Ref(L, LUA_REGISTRYINDEX);
                 entry->memory = to_memory(L, -1);
-
-                dmLogInfo("Found memory");
+            } else {
+                dmLogInfo("Cannot import %s.%s", module->name, entry->name);
             }
 
             if (entry->ptr != NULL) {
@@ -96,10 +102,48 @@ wasmer_import_t* build_imports(lua_State* L, int index, int& count)
     if (count == 0) {
         return NULL;
     }
+
+    imports = new wasmer_import_t[count];
+    refs = new int[count];
+    int target = 0;
     
-    // TODO: WORK IT
-    
-    return NULL;
+    // Iterate over found imports
+    {
+        struct import_module* module = modules;
+        while (module != NULL) {
+            struct import_entry* entry = module->entries;
+
+            while(entry != NULL) {
+                imports[target].module_name.bytes = (const uint8_t*) module->name;
+                imports[target].module_name.bytes_len = module->name_length;
+                imports[target].import_name.bytes = (const uint8_t*) entry->name;
+                imports[target].import_name.bytes_len = entry->name_length;
+                refs[target] = entry->ref;
+                imports[target].tag = entry->tag;
+                
+                switch (entry->tag) {
+                    case wasmer_import_export_kind::WASM_MEMORY:
+                        imports[target].value.memory = entry->memory->mem;
+                        break ;
+                    default:
+                        dmLogError("Unhandled tag: %i", (int)entry->tag);
+                }
+                
+                struct import_entry* cleanup = entry;
+                entry = entry->next;
+                delete cleanup;
+                target++;
+            }
+            
+            {
+                struct import_module* cleanup = module;
+                module = module->next;
+                delete cleanup;
+            }
+        }
+    }
+
+    return imports;
 }
 
 int import_module(lua_State* L)
@@ -112,8 +156,12 @@ int import_module(lua_State* L)
     bytecode = (const uint8_t*)luaL_checklstring(L, 1, &bytecode_len);
 
     // Build import table
-    int import_count;
-    wasmer_import_t* imports = build_imports(L, 2, import_count);
+    wasmer_import_t* imports;
+    int* refs;
+    int import_count = build_imports(L, 2, imports, refs);
+
+    // TODO: CREATE INSTANCE
+    // TODO: RELEASE ALL STRINGS IN IMPORTS
 
     return 0;
 }
