@@ -37,17 +37,16 @@ static void alloc_copy(const void** buffer, size_t length) {
     *buffer = new_ptr;
 }
 
-int build_imports(lua_State* L, int index, wasmer_import_t*& imports, int*& refs)
+static int build_imports(lua_State* L, int index, wasmer_import_t*& imports, int*& refs)
 {
-    int count;
-    struct import_module* modules = NULL;
-    count = 0;
-
     // No imports
     if (lua_isnil(L, index)) {
-        return NULL;
+        return 0;
     }
     
+    struct import_module* modules = NULL;
+    int count = 0;
+
     lua_pushnil(L);
     while (lua_next(L, index) != 0)
     {
@@ -63,7 +62,7 @@ int build_imports(lua_State* L, int index, wasmer_import_t*& imports, int*& refs
             entry->name = luaL_checklstring(L, -2, &entry->name_length);
             entry->ptr = NULL;
                         
-            // TODO: HANDLE FUNC (C and Lua), TABLE, GLOBAL
+            // TODO: HANDLE FUNC (Wasmer and Lua), TABLE, GLOBAL
             if (is_memory(L, -1)) {
                 // Reference and hold pointer
                 lua_pushvalue(L, -1);
@@ -100,7 +99,7 @@ int build_imports(lua_State* L, int index, wasmer_import_t*& imports, int*& refs
 
     // We no longer need this
     if (count == 0) {
-        return NULL;
+        return 0;
     }
 
     imports = new wasmer_import_t[count];
@@ -143,7 +142,7 @@ int build_imports(lua_State* L, int index, wasmer_import_t*& imports, int*& refs
         }
     }
 
-    return imports;
+    return count;
 }
 
 int import_module(lua_State* L)
@@ -161,6 +160,7 @@ int import_module(lua_State* L)
     int import_count = build_imports(L, 2, imports, refs);
 
     // TODO: CREATE INSTANCE
+    // TODO: BUILD EXPORT TABLE
     // TODO: RELEASE ALL STRINGS IN IMPORTS
 
     return 0;
