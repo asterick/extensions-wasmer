@@ -4,8 +4,14 @@
 #include "extension.h"
 #include "memory.h"
 
+static int dummy(lua_State* L)
+{
+    return 0;
+}
+
 static const luaL_reg extension_methods[] =
 {
+    {"dummy", dummy},
     {0, 0}
 };
 
@@ -28,6 +34,8 @@ void wasm_register_extension(lua_State* L)
     lua_pushstring(L, "memory");
     register_memory(L);
     lua_settable(L, -3);
+
+    lua_pop(L, 1);
     
     assert(top == lua_gettop(L));
 }

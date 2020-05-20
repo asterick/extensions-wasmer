@@ -224,8 +224,8 @@ static const luaL_reg memory_meta[] =
 
 void register_memory(lua_State* L)
 {
+    lua_newtable(L);
     luaL_register(L, NULL, memory_methods);
-
     luaL_newmetatable(L, MEMORY_NAME);
     luaL_register(L, NULL, memory_meta);
     lua_pop(L, 1);
