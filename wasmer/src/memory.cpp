@@ -6,7 +6,11 @@
 
 bool is_memory(lua_State* L, int index)
 {
-    return luaL_checkudata(L, index, MEMORY_NAME) != NULL;
+    lua_getmetatable(L, index);
+    luaL_getmetatable(L, MEMORY_NAME);
+    bool test = lua_rawequal(L, -1, -2);
+    lua_pop(L, 2);
+    return test;
 }
 
 WasmerMemory* to_memory (lua_State *L, int index)
@@ -59,8 +63,21 @@ static int memory_new(lua_State* L)
     luaL_getmetatable(L, MEMORY_NAME);
     lua_setmetatable(L, -2);
     memory->mem = mem;
+    memory->owner = 0;
 
     return 1;
+}
+
+static void memory_from_export(lua_State* L, wasmer_memory_t* mem, int index)
+{
+    lua_pushvalue(L, index);
+    dmScript::Ref(L, LUA_REGISTRYINDEX);
+ 
+    WasmerMemory* memory = (WasmerMemory*) lua_newuserdata(L, sizeof(WasmerMemory));
+    luaL_getmetatable(L, MEMORY_NAME);
+    lua_setmetatable(L, -2);
+    memory->mem = mem;
+    memory->owner = 0;
 }
 
 static int memory_grow(lua_State* L)
@@ -81,7 +98,11 @@ static int memory_gc(lua_State* L)
 {
     WasmerMemory* memory = to_memory(L, 1);
 
-    if (memory->mem) wasmer_memory_destroy(memory->mem);
+    if (memory->owner) {
+        dmScript::Unref(L, LUA_REGISTRYINDEX, memory->owner);
+    } else {
+        wasmer_memory_destroy(memory->mem);
+    }
 
     return 0;
 }
