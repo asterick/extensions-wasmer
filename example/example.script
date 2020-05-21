@@ -1,20 +1,17 @@
 function init(self)
 	-- Create Memory for wasmer
 	local wasm_memory, err = wasmer.memory.new {
-		minimum = 10, -- 640kB
+		minimum = 1000000000, -- 640kB
 		--maximum = 100
 	}
 
-	print (tostring(wasm_memory)  .. " " .. #wasm_memory)
-	print (wasm_memory.grow)
-	wasm_memory:grow(1)
-	wasm_memory:write(8, "asdf")
-	print(wasm_memory[8])
-
+	print (wasm_memory, err)
+	
+	-- Generate a module and play with it's exports
 	bytes = sys.load_resource("/data/test.wasm")
 
 	local modules = {
-		env = { memory = wasm_memory }
+		env = { memory = wasm_memory } -- This is actually unused
 	}
 	
 	exports = wasmer.import (bytes, modules)

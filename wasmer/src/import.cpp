@@ -64,9 +64,7 @@ static int build_imports(lua_State* L, int index, wasmer_import_t*& imports, int
                         
             // TODO: HANDLE FUNC (Wasmer and Lua), TABLE, GLOBAL
 
-            if (is_import(L, -1)) {
-                // Pass on import handle
-            } if (is_memory(L, -1)) {
+            if (is_memory(L, -1)) {
                 // Reference and hold pointer
                 lua_pushvalue(L, -1);
                 entry->ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -161,7 +159,7 @@ static void build_exports(lua_State* L, wasmer_instance_t* instance, int* refs, 
     int exports_len = wasmer_exports_len(import->exports);
     
     for (int i = 0; i < exports_len; i++) {
-        wasmer_export_t* item = wasmer_exports_get(import->, i);
+        wasmer_export_t* item = wasmer_exports_get(import->exports, i);
         wasmer_import_export_kind export_kind = wasmer_export_kind(item);
         wasmer_byte_array name_bytes = wasmer_export_name(item);
         

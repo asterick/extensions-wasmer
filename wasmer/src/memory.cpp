@@ -25,7 +25,6 @@ static int memory_new(lua_State* L)
     int top = lua_gettop(L);
     
     // Verify we were passed a table
-    DM_LUA_STACK_CHECK(L, 1);
     luaL_checktype(L, 1, LUA_TTABLE);
 
     wasmer_limits_t limits = {
