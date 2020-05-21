@@ -185,11 +185,14 @@ static void build_exports(lua_State* L, wasmer_instance_t* instance, int* refs, 
             // TODO: case wasmer_import_export_kind::WASM_TABLE:
             // TODO: case wasmer_import_export_kind::WASM_GLOBAL:
             default:
-                dmLogInfo("Cannot handle %s type %i", name_bytes.bytes, export_kind);
+                dmLogInfo("Cannot handle '%s' type %i", name_bytes.bytes, export_kind);
                 continue ;
         }
     }
     
+    // Discard userdata
+    lua_pop(L, 1);
+
     wasmer_exports_destroy(exports);
 }
 
