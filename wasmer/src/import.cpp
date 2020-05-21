@@ -141,7 +141,7 @@ static int build_imports(lua_State* L, int index, wasmer_import_t*& imports, int
     return count;
 }
 
-static void build_exports(lua_State* L, wasmer_instance_t* instance, int* refs, int ref_count)
+static void build_exports(lua_State* L, wasmer_instance_t* instance, wasmer_exports_t* exports, int* refs, int ref_count)
 {
     // Create our export index
     lua_newtable(L);
@@ -152,12 +152,11 @@ static void build_exports(lua_State* L, wasmer_instance_t* instance, int* refs, 
     lua_setmetatable(L, -2);
 
     import->instance = instance;
+    import->exports = exports;
     import->refs = refs;
     import->ref_count = ref_count;
 
     // Start iterating over the index
-    wasmer_exports_t* exports;
-    wasmer_instance_exports(instance, &exports);
     int exports_len = wasmer_exports_len(exports);
     
     for (int i = 0; i < exports_len; i++) {
@@ -192,8 +191,6 @@ static void build_exports(lua_State* L, wasmer_instance_t* instance, int* refs, 
     
     // Discard userdata
     lua_pop(L, 1);
-
-    wasmer_exports_destroy(exports);
 }
 
 int import_module(lua_State* L)
@@ -210,6 +207,8 @@ int import_module(lua_State* L)
 
     // Create our instance
     wasmer_instance_t *instance = NULL;
+    wasmer_exports_t* exports = NULL;
+
     wasmer_result_t res = wasmer_instantiate(
         &instance,
         (uint8_t*) bytecode,
@@ -217,6 +216,29 @@ int import_module(lua_State* L)
         imports,
         import_count
     );
+
+    // Attempt to locate exports
+    if (res == wasmer_result_t::WASMER_OK) {
+        res = wasmer_instance_exports(instance, &exports);
+
+        if (res != wasmer_result_t::WASMER_OK) {
+            wasmer_instance_destroy(instance);
+        }
+    }
+
+    // Failed, teardown data
+    if (res != wasmer_result_t::WASMER_OK) {
+        for (int i = 0; i < import_count; i++) {
+            luaL_unref(L, LUA_REGISTRYINDEX, refs[i]);
+        }
+        delete refs;
+
+        lua_pushnil(L);
+        wasm_pusherror(L);
+        return 2;
+    }
+
+    build_exports(L, instance, exports, refs, import_count);
 
     // -- Release Import table (unneeded)
     if (import_count > 0) {
@@ -231,20 +253,6 @@ int import_module(lua_State* L)
         delete imports;
     }
 
-    // -- Failed to create our instance
-    if (res != wasmer_result_t::WASMER_OK) {
-        // Release references        
-        for (int i = 0; i < import_count; i++) {
-            luaL_unref(L, LUA_REGISTRYINDEX, refs[i]);
-        }
-        delete refs;
-
-        lua_pushnil(L);
-        wasm_pusherror(L);
-        return 2;
-    }
-
-    build_exports(L, instance, refs, import_count);
     return 1;
 }
 
@@ -275,6 +283,7 @@ static int import_gc(lua_State* L)
         luaL_unref(L, LUA_REGISTRYINDEX, import->refs[i]);
     }
     delete import->refs;
+    wasmer_exports_destroy(import->exports);
     wasmer_instance_destroy(import->instance);
     
     return 0;
