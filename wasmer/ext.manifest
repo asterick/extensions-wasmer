@@ -8,3 +8,4 @@ platforms:
     x86_64-osx:
         context:
             libs: ["wasmer"]
+            flags: ["-mmacosx-version-min=10.10"]
