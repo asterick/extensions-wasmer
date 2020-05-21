@@ -5,6 +5,12 @@
 struct WasmerFunction {
     const struct wasmer_export_func_t* function;
     int owner;
+    uint32_t param_count;
+    wasmer_value_tag* param_type;
+    wasmer_value_t* param_value;
+    uint32_t return_count;
+    wasmer_value_tag* return_type;
+    wasmer_value_t* return_value;
 };
 
 bool is_function(lua_State* L, int index);
