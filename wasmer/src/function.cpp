@@ -15,9 +15,9 @@ bool is_function(lua_State* L, int index)
 
 WasmerFunction* to_function (lua_State *L, int index)
 {
-    WasmerFunction* function = (WasmerFunction *)lua_touserdata(L, index);
-    if (mem == NULL) luaL_typerror(L, index, FUNCTION_NAME);
-    return mem;
+    WasmerFunction* funct = (WasmerFunction *)lua_touserdata(L, index);
+    if (funct == NULL) luaL_typerror(L, index, FUNCTION_NAME);
+    return funct;
 }
 
 void function_from_export(lua_State* L, wasmer_export_func_t* func, int index)

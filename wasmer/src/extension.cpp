@@ -3,6 +3,7 @@
 #include "wasmer.hh"
 #include "extension.h"
 #include "memory.h"
+#include "function.h"
 #include "import.h"
 
 struct luaL_const {
