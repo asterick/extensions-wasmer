@@ -4,7 +4,7 @@
 #include "extension.h"
 #include "memory.h"
 #include "function.h"
-#include "import.h"
+#include "instance.h"
 
 struct import_entry
 {
@@ -146,21 +146,21 @@ static void build_exports(lua_State* L, wasmer_instance_t* instance, int* refs, 
     lua_newtable(L);
 
     // Create our userdata object
-    WasmerImport* import = (WasmerImport*) lua_newuserdata(L, sizeof(WasmerImport));
-    luaL_getmetatable(L, IMPORT_NAME);
+    WasmerInstance* inst = (WasmerInstance*) lua_newuserdata(L, sizeof(WasmerInstance));
+    luaL_getmetatable(L, INSTANCE_NAME);
     lua_setmetatable(L, -2);
 
-    wasmer_instance_exports(instance, &import->exports);
+    wasmer_instance_exports(instance, &inst->exports);
    
-    import->instance = instance;
-    import->refs = refs;
-    import->ref_count = ref_count;
+    inst->instance = instance;
+    inst->refs = refs;
+    inst->ref_count = ref_count;
 
     // Start iterating over the index
-    int exports_len = wasmer_exports_len(import->exports);
+    int exports_len = wasmer_exports_len(inst->exports);
     
     for (int i = 0; i < exports_len; i++) {
-        wasmer_export_t* item = wasmer_exports_get(import->exports, i);
+        wasmer_export_t* item = wasmer_exports_get(inst->exports, i);
         wasmer_import_export_kind export_kind = wasmer_export_kind(item);
         wasmer_byte_array name_bytes = wasmer_export_name(item);
         
@@ -200,7 +200,7 @@ static void build_exports(lua_State* L, wasmer_instance_t* instance, int* refs, 
     lua_pop(L, 1);
 }
 
-int import_module(lua_State* L)
+int instance_module(lua_State* L)
 {
     // Load bytecode for module
     size_t bytecode_len;
@@ -254,10 +254,10 @@ int import_module(lua_State* L)
     return 1;
 }
 
-bool is_import(lua_State* L, int index)
+bool is_instance(lua_State* L, int index)
 {
     lua_getmetatable(L, index);
-    luaL_getmetatable(L, IMPORT_NAME);
+    luaL_getmetatable(L, INSTANCE_NAME);
     bool test = lua_rawequal(L, -1, -2);
     lua_pop(L, 2);
     return test;
@@ -265,46 +265,46 @@ bool is_import(lua_State* L, int index)
    return 0;
 }
 
-WasmerImport* to_import (lua_State *L, int index)
+WasmerInstance* to_instance (lua_State *L, int index)
 {
-    WasmerImport* import = (WasmerImport *)lua_touserdata(L, index);
-    if (import == NULL) luaL_typerror(L, index, IMPORT_NAME);
-    return import;
+    WasmerInstance* instance = (WasmerInstance *)lua_touserdata(L, index);
+    if (instance == NULL) luaL_typerror(L, index, INSTANCE_NAME);
+    return instance;
 }
 
-static int import_gc(lua_State* L)
+static int instance_gc(lua_State* L)
 {
-    WasmerImport* import = to_import(L, 1);
+    WasmerInstance* instance = to_instance(L, 1);
 
     // Release references        
-    for (int i = 0; i < import->ref_count; i++) {
-        luaL_unref(L, LUA_REGISTRYINDEX, import->refs[i]);
+    for (int i = 0; i < instance->ref_count; i++) {
+        luaL_unref(L, LUA_REGISTRYINDEX, instance->refs[i]);
     }
-    delete import->refs;
-    wasmer_exports_destroy(import->exports);
-    wasmer_instance_destroy(import->instance);
+    delete instance->refs;
+    wasmer_exports_destroy(instance->exports);
+    wasmer_instance_destroy(instance->instance);
     
     return 0;
 }
 
-static int import_tostring(lua_State* L)
+static int instance_tostring(lua_State* L)
 {
-    WasmerImport* import = to_import(L, 1);
-    lua_pushfstring(L, IMPORT_NAME "(0x%x)",(int)import);
+    WasmerInstance* instance = to_instance(L, 1);
+    lua_pushfstring(L, INSTANCE_NAME "(0x%x)",(int)instance);
 
     return 1;
 }
 
-static const luaL_reg import_meta[] =
+static const luaL_reg instance_meta[] =
 {
-    {"__gc",       import_gc},
-    {"__tostring", import_tostring},
+    {"__gc",       instance_gc},
+    {"__tostring", instance_tostring},
     {0, 0}
 };
 
-void register_import(lua_State* L)
+void register_instance(lua_State* L)
 {
-    luaL_newmetatable(L, IMPORT_NAME);
-    luaL_register(L, NULL, import_meta);
+    luaL_newmetatable(L, INSTANCE_NAME);
+    luaL_register(L, NULL, instance_meta);
     lua_pop(L, 1);
 }

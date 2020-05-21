@@ -4,7 +4,7 @@
 #include "extension.h"
 #include "memory.h"
 #include "function.h"
-#include "import.h"
+#include "instance.h"
 
 struct luaL_const {
     const char* name;
@@ -13,7 +13,7 @@ struct luaL_const {
 
 static const luaL_reg extension_methods[] =
 {
-    { "import", import_module },
+    { "instance", instance_module },
     { 0, 0 }
 };
 
@@ -40,7 +40,7 @@ void wasm_register_extension(lua_State* L)
     int top = lua_gettop(L);
 
     luaL_register(L, EXTENSION_NAME, extension_methods);
-    register_import(L);
+    register_instance(L);
     register_function(L);
 
     lua_pushstring(L, "memory");
