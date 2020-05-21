@@ -17,5 +17,6 @@ function init(self)
 		env = { memory = wasm_memory }
 	}
 	
-	wasmer.import (bytes, modules)
+	exports = wasmer.import (bytes, modules)
+	print (exports)
 end

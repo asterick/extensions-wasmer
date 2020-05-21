@@ -138,6 +138,21 @@ static int build_imports(lua_State* L, int index, wasmer_import_t*& imports, int
     return count;
 }
 
+static int build_exports(lua_State* L, wasmer_instance_t* instance, int* refs, int ref_count) {
+    // Create our userdata object
+    WasmerImport* import = (WasmerImport*) lua_newuserdata(L, sizeof(WasmerImport));
+    luaL_getmetatable(L, IMPORT_NAME);
+    lua_setmetatable(L, -2);
+
+    import->instance = instance;
+    import->refs = refs;
+    import->ref_count = ref_count;
+
+    lua_newtable(L);
+    // TODO: BUILD IMPORTS
+    import->index = luaL_ref(L, LUA_REGISTRYINDEX);
+}
+
 int import_module(lua_State* L)
 {
     lua_pushnil(L);
@@ -183,18 +198,9 @@ int import_module(lua_State* L)
         lua_pushnil(L);
         wasm_pusherror(L);
         return 2;
-    }
+    } else {
 
-    WasmerImport* import = (WasmerImport*) lua_newuserdata(L, sizeof(WasmerImport));
-    luaL_getmetatable(L, IMPORT_NAME);
-    lua_setmetatable(L, -2);    
-
-    import->instance = instance;
-    import->refs = refs;
-    import->ref_count = import_count;
-    
-    // TODO: BUILD EXPORT TABLE
-
+    build_exports(L, instance, refs, ref_count);
     return 1;
 }
 
@@ -224,7 +230,8 @@ static int import_gc(lua_State* L)
     }
     delete import->refs;
     wasmer_instance_destroy(import->instance);
-
+    luaL_unref(L, LUA_REGISTRYINDEX, import->index);
+    
     return 0;
 }
 
@@ -236,10 +243,23 @@ static int import_tostring(lua_State* L)
     return 1;
 }
 
+static int import_exports(lua_State* L)
+{
+    WasmerImport* import = to_import(L, 1);
+
+    lua_rawgeti(L, LUA_REGISTRYINDEX, import->index);
+    lua_pushvalue(L, 2);
+    lua_gettable(L, -2);
+    lua_remove(L, -2);
+    
+    return 1;
+}
+
 static const luaL_reg import_meta[] =
 {
     {"__gc",       import_gc},
     {"__tostring", import_tostring},
+    {"__index",    import_exports},
     {0, 0}
 };
 
