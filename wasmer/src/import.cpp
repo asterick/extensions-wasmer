@@ -141,7 +141,7 @@ static int build_imports(lua_State* L, int index, wasmer_import_t*& imports, int
     return count;
 }
 
-static void build_exports(lua_State* L, wasmer_instance_t* instance, wasmer_exports_t* exports, int* refs, int ref_count)
+static void build_exports(lua_State* L, wasmer_instance_t* instance, int* refs, int ref_count)
 {
     // Create our export index
     lua_newtable(L);
@@ -151,16 +151,17 @@ static void build_exports(lua_State* L, wasmer_instance_t* instance, wasmer_expo
     luaL_getmetatable(L, IMPORT_NAME);
     lua_setmetatable(L, -2);
 
+    wasmer_instance_exports(instance, &import->exports);
+   
     import->instance = instance;
-    import->exports = exports;
     import->refs = refs;
     import->ref_count = ref_count;
 
     // Start iterating over the index
-    int exports_len = wasmer_exports_len(exports);
+    int exports_len = wasmer_exports_len(import->exports);
     
     for (int i = 0; i < exports_len; i++) {
-        wasmer_export_t* item = wasmer_exports_get(exports, i);
+        wasmer_export_t* item = wasmer_exports_get(import->, i);
         wasmer_import_export_kind export_kind = wasmer_export_kind(item);
         wasmer_byte_array name_bytes = wasmer_export_name(item);
         
@@ -217,29 +218,6 @@ int import_module(lua_State* L)
         import_count
     );
 
-    // Attempt to locate exports
-    if (res == wasmer_result_t::WASMER_OK) {
-        res = wasmer_instance_exports(instance, &exports);
-
-        if (res != wasmer_result_t::WASMER_OK) {
-            wasmer_instance_destroy(instance);
-        }
-    }
-
-    // Failed, teardown data
-    if (res != wasmer_result_t::WASMER_OK) {
-        for (int i = 0; i < import_count; i++) {
-            luaL_unref(L, LUA_REGISTRYINDEX, refs[i]);
-        }
-        delete refs;
-
-        lua_pushnil(L);
-        wasm_pusherror(L);
-        return 2;
-    }
-
-    build_exports(L, instance, exports, refs, import_count);
-
     // -- Release Import table (unneeded)
     if (import_count > 0) {
         const uint8_t* last_module = NULL;
@@ -252,6 +230,20 @@ int import_module(lua_State* L)
         }
         delete imports;
     }
+
+    // Attempt to locate exports
+    if (res != wasmer_result_t::WASMER_OK) {
+        for (int i = 0; i < import_count; i++) {
+            luaL_unref(L, LUA_REGISTRYINDEX, refs[i]);
+        }
+        delete refs;
+
+        lua_pushnil(L);
+        wasm_pusherror(L);
+        return 2;
+    }
+
+    build_exports(L, instance, refs, import_count);
 
     return 1;
 }
