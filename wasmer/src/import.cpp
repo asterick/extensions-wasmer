@@ -66,7 +66,7 @@ static int build_imports(lua_State* L, int index, wasmer_import_t*& imports, int
             if (is_memory(L, -1)) {
                 // Reference and hold pointer
                 lua_pushvalue(L, -1);
-                entry->ref = dmScript::Ref(L, LUA_REGISTRYINDEX);
+                entry->ref = luaL_ref(L, LUA_REGISTRYINDEX);
                 entry->tag = wasmer_import_export_kind::WASM_MEMORY;
                 entry->memory = to_memory(L, -1)->mem;
             } else {
@@ -120,11 +120,11 @@ static int build_imports(lua_State* L, int index, wasmer_import_t*& imports, int
                 imports[target].tag = entry->tag;
                 imports[target].value.memory = entry->memory;
                 refs[target] = entry->ref;
+                target++;
 
                 struct import_entry* cleanup = entry;
                 entry = entry->next;
                 delete cleanup;
-                target++;
             }
             
             {
@@ -138,7 +138,8 @@ static int build_imports(lua_State* L, int index, wasmer_import_t*& imports, int
     return count;
 }
 
-static int build_exports(lua_State* L, wasmer_instance_t* instance, int* refs, int ref_count) {
+static void build_exports(lua_State* L, wasmer_instance_t* instance, int* refs, int ref_count)
+{
     // Create our userdata object
     WasmerImport* import = (WasmerImport*) lua_newuserdata(L, sizeof(WasmerImport));
     luaL_getmetatable(L, IMPORT_NAME);
@@ -148,23 +149,25 @@ static int build_exports(lua_State* L, wasmer_instance_t* instance, int* refs, i
     import->refs = refs;
     import->ref_count = ref_count;
 
+    // Create our export index
     lua_newtable(L);
-    // TODO: BUILD IMPORTS
+
+    // TODO: BUILD EXPORTS
+
     import->index = luaL_ref(L, LUA_REGISTRYINDEX);
 }
 
 int import_module(lua_State* L)
 {
-    lua_pushnil(L);
-
-    // Build import table
-    wasmer_import_t* imports;
-    int* refs;
-    int import_count = build_imports(L, 2, imports, refs);
-
     // Load bytecode for module
     size_t bytecode_len;
     const uint8_t* bytecode = (const uint8_t*)luaL_checklstring(L, 1, &bytecode_len);
+
+    // Build import table
+    wasmer_import_t DUMMY_IMPORT = {};
+    wasmer_import_t* imports = &DUMMY_IMPORT;
+    int* refs;
+    int import_count = build_imports(L, 2, imports, refs);
 
     // Create our instance
     wasmer_instance_t *instance = NULL;
@@ -177,30 +180,32 @@ int import_module(lua_State* L)
     );
 
     // -- Release Import table (unneeded)
-    const uint8_t* last_module = NULL;
-    for (int i = 0; i < import_count; i++) {
-        if (imports[i].module_name.bytes != last_module) {
-            last_module = imports[i].module_name.bytes;
-            delete last_module;
+    if (import_count > 0) {
+        const uint8_t* last_module = NULL;
+        for (int i = 0; i < import_count; i++) {
+            if (imports[i].module_name.bytes != last_module) {
+                last_module = imports[i].module_name.bytes;
+                delete last_module;
+            }
+            delete imports[i].import_name.bytes;
         }
-        delete imports[i].import_name.bytes;
+        delete imports;
     }
-    delete imports;
 
     // -- Failed to create our instance
     if (res != wasmer_result_t::WASMER_OK) {
         // Release references        
         for (int i = 0; i < import_count; i++) {
-            dmScript::Unref(L, LUA_REGISTRYINDEX, refs[i]);
+            luaL_unref(L, LUA_REGISTRYINDEX, refs[i]);
         }
         delete refs;
 
         lua_pushnil(L);
         wasm_pusherror(L);
         return 2;
-    } else {
+    }
 
-    build_exports(L, instance, refs, ref_count);
+    build_exports(L, instance, refs, import_count);
     return 1;
 }
 
@@ -211,6 +216,8 @@ bool is_import(lua_State* L, int index)
     bool test = lua_rawequal(L, -1, -2);
     lua_pop(L, 2);
     return test;
+
+   return 0;
 }
 
 WasmerImport* to_import (lua_State *L, int index)
@@ -226,7 +233,7 @@ static int import_gc(lua_State* L)
 
     // Release references        
     for (int i = 0; i < import->ref_count; i++) {
-        dmScript::Unref(L, LUA_REGISTRYINDEX, import->refs[i]);
+        luaL_unref(L, LUA_REGISTRYINDEX, import->refs[i]);
     }
     delete import->refs;
     wasmer_instance_destroy(import->instance);
@@ -243,7 +250,7 @@ static int import_tostring(lua_State* L)
     return 1;
 }
 
-static int import_exports(lua_State* L)
+static int import_get(lua_State* L)
 {
     WasmerImport* import = to_import(L, 1);
 
@@ -259,7 +266,7 @@ static const luaL_reg import_meta[] =
 {
     {"__gc",       import_gc},
     {"__tostring", import_tostring},
-    {"__index",    import_exports},
+    {"__index",    import_get},
     {0, 0}
 };
 

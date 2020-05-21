@@ -71,7 +71,7 @@ static int memory_new(lua_State* L)
 static void memory_from_export(lua_State* L, wasmer_memory_t* mem, int index)
 {
     lua_pushvalue(L, index);
-    dmScript::Ref(L, LUA_REGISTRYINDEX);
+    luaL_ref(L, LUA_REGISTRYINDEX);
  
     WasmerMemory* memory = (WasmerMemory*) lua_newuserdata(L, sizeof(WasmerMemory));
     luaL_getmetatable(L, MEMORY_NAME);
@@ -99,7 +99,7 @@ static int memory_gc(lua_State* L)
     WasmerMemory* memory = to_memory(L, 1);
 
     if (memory->owner) {
-        dmScript::Unref(L, LUA_REGISTRYINDEX, memory->owner);
+        luaL_unref(L, LUA_REGISTRYINDEX, memory->owner);
     } else {
         wasmer_memory_destroy(memory->mem);
     }
