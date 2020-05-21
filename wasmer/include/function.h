@@ -9,7 +9,6 @@ struct WasmerFunction {
     wasmer_value_tag* param_type;
     wasmer_value_t* param_value;
     uint32_t return_count;
-    wasmer_value_tag* return_type;
     wasmer_value_t* return_value;
 };
 

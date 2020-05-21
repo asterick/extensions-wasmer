@@ -42,7 +42,6 @@ void function_from_export(lua_State* L, const wasmer_export_func_t* funct, int i
 
     wasmer_export_func_returns_arity(funct, &function->return_count);
     function->return_value = new wasmer_value_t[function->return_count];
-    wasmer_export_func_returns(funct, function->param_type, function->return_count);
 }
 
 static int function_gc(lua_State* L)
@@ -52,7 +51,6 @@ static int function_gc(lua_State* L)
     luaL_unref(L, LUA_REGISTRYINDEX, function->owner);
     
     delete function->param_type;
-    delete function->return_type;
     delete function->param_value;
     delete function->return_value;
 
@@ -71,7 +69,7 @@ static int function_call(lua_State* L)
 {
     WasmerFunction* funct = to_function(L, 1);
 
-    for (int i = 0; i < funct->param_count; i++) {
+        for (int i = 0; i < funct->param_count; i++) {
         switch (funct->param_type[i]) {
             case wasmer_value_tag::WASM_I32:
                 funct->param_value[i].value.I32 = (int32_t)lua_tonumber(L, i + 2);
@@ -95,7 +93,7 @@ static int function_call(lua_State* L)
         funct->return_value,
         funct->return_count
     );
-
+    
     for (int i = 0; i < funct->return_count; i++) {
         switch (funct->return_value[i].tag) {
             case wasmer_value_tag::WASM_I32:
