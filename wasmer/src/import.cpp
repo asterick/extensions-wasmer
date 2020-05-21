@@ -3,6 +3,7 @@
 #include "wasmer.hh"
 #include "extension.h"
 #include "memory.h"
+#include "function.h"
 #include "import.h"
 
 struct import_entry
@@ -179,7 +180,14 @@ static void build_exports(lua_State* L, wasmer_instance_t* instance, int* refs, 
                     lua_settable(L, -4);
                 }
                 break ;
-            // TODO: case wasmer_import_export_kind::WASM_FUNCTION:
+            case wasmer_import_export_kind::WASM_FUNCTION:
+                {
+                    wasmer_export_func_t* funct = wasmer_export_to_func(item);
+                    lua_pushlstring(L, (const char*)name_bytes.bytes, (size_t)name_bytes.bytes_len);
+                    function_from_export(L, funct, -2);
+                    lua_settable(L, -4);
+                }
+                break ;
             // TODO: case wasmer_import_export_kind::WASM_TABLE:
             // TODO: case wasmer_import_export_kind::WASM_GLOBAL:
             default:

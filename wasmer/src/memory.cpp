@@ -22,8 +22,6 @@ WasmerMemory* to_memory (lua_State *L, int index)
 
 static int memory_new(lua_State* L)
 {
-    int top = lua_gettop(L);
-    
     // Verify we were passed a table
     luaL_checktype(L, 1, LUA_TTABLE);
 
@@ -52,8 +50,6 @@ static int memory_new(lua_State* L)
     if (res != wasmer_result_t::WASMER_OK) {
         lua_pushnil(L);
         wasm_pusherror(L);
-
-        dmLogInfo("%i\n", top - lua_gettop(L));
         return 2;
     }
 
