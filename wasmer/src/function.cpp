@@ -36,8 +36,11 @@ void function_from_export(lua_State* L, const wasmer_export_func_t* funct, int i
     function->param_value = new wasmer_value_t[function->param_count];
     wasmer_export_func_params(funct, function->param_type, function->param_count);
 
+    for (int i = 0; i < function->param_count; i++) {
+        function->param_value[i].tag = function->param_type[i];
+    }
+
     wasmer_export_func_returns_arity(funct, &function->return_count);
-    function->return_type = new wasmer_value_tag[function->return_count];
     function->return_value = new wasmer_value_t[function->return_count];
     wasmer_export_func_returns(funct, function->param_type, function->return_count);
 }
@@ -71,16 +74,16 @@ static int function_call(lua_State* L)
     for (int i = 0; i < funct->param_count; i++) {
         switch (funct->param_type[i]) {
             case wasmer_value_tag::WASM_I32:
-                funct->param_value[i].I32 = (int32_t)lua_tonumber(L, i + 1);
+                funct->param_value[i].value.I32 = (int32_t)lua_tonumber(L, i + 2);
                 break ;
             case wasmer_value_tag::WASM_I64:
-                funct->param_value[i].I64 = (int64_t)lua_tonumber(L, i + 1);
+                funct->param_value[i].value.I64 = (int64_t)lua_tonumber(L, i + 2);
                 break ;
             case wasmer_value_tag::WASM_F32:
-                funct->param_value[i].F32 = (float)lua_tonumber(L, i + 1);
+                funct->param_value[i].value.F32 = (float)lua_tonumber(L, i + 2);
                 break ;
             case wasmer_value_tag::WASM_F64:
-                funct->param_value[i].F64 = (double)lua_tonumber(L, i + 1);
+                funct->param_value[i].value.F64 = (double)lua_tonumber(L, i + 2);
                 break ;            
         }
     }
@@ -94,18 +97,18 @@ static int function_call(lua_State* L)
     );
 
     for (int i = 0; i < funct->return_count; i++) {
-        switch (funct->return_type[i]) {
+        switch (funct->return_value[i].tag) {
             case wasmer_value_tag::WASM_I32:
-                lua_pushnumber(L, (int32_t)funct->return_value[i]);
+                lua_pushinteger(L, funct->return_value[i].value.I32);
                 break ;
             case wasmer_value_tag::WASM_I64:
-                lua_pushnumber(L, (int64_t)funct->return_value[i]);
+                lua_pushinteger(L, funct->return_value[i].I64);
                 break ;
             case wasmer_value_tag::WASM_F32:
-                lua_pushnumber(L, (float)funct->return_value[i]);
+                lua_pushnumber(L, funct->return_value[i].F32);
                 break ;
             case wasmer_value_tag::WASM_F64:
-                lua_pushnumber(L, (double)funct->return_value[i]);
+                lua_pushnumber(L, funct->return_value[i].F64);
                 break ;            
         }
     }
