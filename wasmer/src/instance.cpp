@@ -290,7 +290,7 @@ static int instance_gc(lua_State* L)
 static int instance_tostring(lua_State* L)
 {
     WasmerInstance* instance = to_instance(L, 1);
-    lua_pushfstring(L, INSTANCE_NAME "(0x%x)",(int)instance);
+    lua_pushfstring(L, INSTANCE_NAME "(0x%x)",(int)(size_t)instance);
 
     return 1;
 }

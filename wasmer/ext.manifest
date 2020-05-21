@@ -5,3 +5,6 @@ platforms:
     x86_64-win32:
         context:
             libs: ["wasmer.lib", "UserEnv.lib"]
+    x86_64-osx:
+        context:
+            libs: ["wasmer"]
