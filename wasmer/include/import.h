@@ -4,7 +4,6 @@
 
 struct WasmerImport {
     struct wasmer_instance_t* instance;
-    int index;
     int ref_count;
     int* refs;
 };

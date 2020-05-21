@@ -43,7 +43,7 @@ static int build_imports(lua_State* L, int index, wasmer_import_t*& imports, int
     if (lua_isnil(L, index)) {
         return 0;
     }
-    
+
     struct import_module* modules = NULL;
     int count = 0;
 
@@ -64,7 +64,9 @@ static int build_imports(lua_State* L, int index, wasmer_import_t*& imports, int
                         
             // TODO: HANDLE FUNC (Wasmer and Lua), TABLE, GLOBAL
 
-            if (is_memory(L, -1)) {
+            if (is_import(L, -1)) {
+                // Pass on import handle
+            } if (is_memory(L, -1)) {
                 // Reference and hold pointer
                 lua_pushvalue(L, -1);
                 entry->ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -141,6 +143,9 @@ static int build_imports(lua_State* L, int index, wasmer_import_t*& imports, int
 
 static void build_exports(lua_State* L, wasmer_instance_t* instance, int* refs, int ref_count)
 {
+    // Create our export index
+    lua_newtable(L);
+
     // Create our userdata object
     WasmerImport* import = (WasmerImport*) lua_newuserdata(L, sizeof(WasmerImport));
     luaL_getmetatable(L, IMPORT_NAME);
@@ -150,9 +155,7 @@ static void build_exports(lua_State* L, wasmer_instance_t* instance, int* refs, 
     import->refs = refs;
     import->ref_count = ref_count;
 
-    // Create our export index
-    lua_newtable(L);
-
+    // Start iterating over the index
     wasmer_exports_t* exports;
     wasmer_instance_exports(instance, &exports);
     int exports_len = wasmer_exports_len(exports);
@@ -162,13 +165,32 @@ static void build_exports(lua_State* L, wasmer_instance_t* instance, int* refs, 
         wasmer_import_export_kind export_kind = wasmer_export_kind(item);
         wasmer_byte_array name_bytes = wasmer_export_name(item);
         
-        // TODO: BUILD EXPORT
+        switch (export_kind) {
+            case wasmer_import_export_kind::WASM_MEMORY:
+                {
+                    wasmer_memory_t* memory;
+                    wasmer_result_t res = wasmer_export_to_memory(item, &memory);
+                    
+                    if (res != wasmer_result_t::WASMER_OK) {
+                        dmLogInfo("Cannot created exported memory %s type %i", name_bytes.bytes, export_kind);
+                        continue ;
+                    }
 
-        dmLogInfo("%s %i", name_bytes.bytes, export_kind);
+                    lua_pushlstring(L, (const char*)name_bytes.bytes, (size_t)name_bytes.bytes_len);
+                    memory_from_export(L, memory, -2);
+                    lua_settable(L, -4);
+                }
+                break ;
+            // TODO: case wasmer_import_export_kind::WASM_FUNCTION:
+            // TODO: case wasmer_import_export_kind::WASM_TABLE:
+            // TODO: case wasmer_import_export_kind::WASM_GLOBAL:
+            default:
+                dmLogInfo("Cannot handle %s type %i", name_bytes.bytes, export_kind);
+                continue ;
+        }
     }
+    
     wasmer_exports_destroy(exports);
-
-    import->index = luaL_ref(L, LUA_REGISTRYINDEX);
 }
 
 int import_module(lua_State* L)
@@ -251,7 +273,6 @@ static int import_gc(lua_State* L)
     }
     delete import->refs;
     wasmer_instance_destroy(import->instance);
-    luaL_unref(L, LUA_REGISTRYINDEX, import->index);
     
     return 0;
 }
@@ -264,23 +285,10 @@ static int import_tostring(lua_State* L)
     return 1;
 }
 
-static int import_get(lua_State* L)
-{
-    WasmerImport* import = to_import(L, 1);
-
-    lua_rawgeti(L, LUA_REGISTRYINDEX, import->index);
-    lua_pushvalue(L, 2);
-    lua_gettable(L, -2);
-    lua_remove(L, -2);
-    
-    return 1;
-}
-
 static const luaL_reg import_meta[] =
 {
     {"__gc",       import_gc},
     {"__tostring", import_tostring},
-    {"__index",    import_get},
     {0, 0}
 };
 

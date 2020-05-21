@@ -68,16 +68,16 @@ static int memory_new(lua_State* L)
     return 1;
 }
 
-static void memory_from_export(lua_State* L, wasmer_memory_t* mem, int index)
+void memory_from_export(lua_State* L, wasmer_memory_t* mem, int index)
 {
     lua_pushvalue(L, index);
-    luaL_ref(L, LUA_REGISTRYINDEX);
+    int owner = luaL_ref(L, LUA_REGISTRYINDEX);
  
     WasmerMemory* memory = (WasmerMemory*) lua_newuserdata(L, sizeof(WasmerMemory));
     luaL_getmetatable(L, MEMORY_NAME);
     lua_setmetatable(L, -2);
     memory->mem = mem;
-    memory->owner = 0;
+    memory->owner = owner;
 }
 
 static int memory_grow(lua_State* L)

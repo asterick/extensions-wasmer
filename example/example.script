@@ -18,5 +18,8 @@ function init(self)
 	}
 	
 	exports = wasmer.import (bytes, modules)
-	print (exports)
+	print (exports.memory)
+	for k, v in pairs(exports) do
+		print (k)
+	end
 end
