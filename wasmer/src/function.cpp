@@ -20,7 +20,7 @@ WasmerFunction* to_function (lua_State *L, int index)
     return funct;
 }
 
-void function_from_export(lua_State* L, wasmer_export_func_t* func, int index)
+void function_from_export(lua_State* L, const wasmer_export_func_t* funct, int index)
 {
     lua_pushvalue(L, index);
     int owner = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -51,6 +51,7 @@ static int function_tostring(lua_State* L)
 
 static int function_call(lua_State* L)
 {
+    dmLogInfo("We made it");
     return 0;
 }
 
