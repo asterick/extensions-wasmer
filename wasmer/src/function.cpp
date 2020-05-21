@@ -102,13 +102,13 @@ static int function_call(lua_State* L)
                 lua_pushinteger(L, funct->return_value[i].value.I32);
                 break ;
             case wasmer_value_tag::WASM_I64:
-                lua_pushinteger(L, funct->return_value[i].I64);
+                lua_pushinteger(L, funct->return_value[i].value.I64);
                 break ;
             case wasmer_value_tag::WASM_F32:
-                lua_pushnumber(L, funct->return_value[i].F32);
+                lua_pushnumber(L, funct->return_value[i].value.F32);
                 break ;
             case wasmer_value_tag::WASM_F64:
-                lua_pushnumber(L, funct->return_value[i].F64);
+                lua_pushnumber(L, funct->return_value[i].value.F64);
                 break ;            
         }
     }
