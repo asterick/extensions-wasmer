@@ -14,11 +14,12 @@ function init(self)
 		env = { memory = wasm_memory } -- This is actually unused
 	}
 	
-	exports = wasmer.instance (bytes, modules)
+	exports, err = wasmer.instance (bytes, modules)
+	print(exports, err)
 	for k, v in pairs(exports) do
 		print (k .. " = " .. tostring(v))
 	end
 
 	print(exports.add(9, 0))
-	print(222 + 9)
+	print(exports.memory)
 end

@@ -42,6 +42,7 @@ static int build_imports(lua_State* L, int index, wasmer_import_t*& imports, int
 {
     // No imports
     if (lua_isnil(L, index)) {
+        refs = NULL;
         return 0;
     }
 
@@ -101,6 +102,7 @@ static int build_imports(lua_State* L, int index, wasmer_import_t*& imports, int
 
     // We no longer need this
     if (count == 0) {
+        refs = NULL;
         return 0;
     }
 
@@ -171,7 +173,7 @@ static void build_exports(lua_State* L, wasmer_instance_t* instance, int* refs, 
                     wasmer_result_t res = wasmer_export_to_memory(item, &memory);
                     
                     if (res != wasmer_result_t::WASMER_OK) {
-                        dmLogInfo("Cannot created exported memory %s type %i", name_bytes.bytes, export_kind);
+                        dmLogInfo("Cannot created exported memory %s type %i", name_bytes.bytes, (int)export_kind);
                         continue ;
                     }
 
@@ -191,7 +193,7 @@ static void build_exports(lua_State* L, wasmer_instance_t* instance, int* refs, 
             // TODO: case wasmer_import_export_kind::WASM_TABLE:
             // TODO: case wasmer_import_export_kind::WASM_GLOBAL:
             default:
-                dmLogInfo("Cannot handle '%s' type %i", name_bytes.bytes, export_kind);
+                dmLogInfo("Cannot handle '%s' type %i", name_bytes.bytes, (int)export_kind);
                 continue ;
         }
     }
@@ -214,7 +216,6 @@ int instance_module(lua_State* L)
 
     // Create our instance
     wasmer_instance_t *instance = NULL;
-    wasmer_exports_t* exports = NULL;
 
     wasmer_result_t res = wasmer_instantiate(
         &instance,

@@ -25,9 +25,7 @@ static int memory_new(lua_State* L)
     // Verify we were passed a table
     luaL_checktype(L, 1, LUA_TTABLE);
 
-    wasmer_limits_t limits = {
-        .max = { .has_some = false }
-    };
+    wasmer_limits_t limits;
 
     // Define limits
     lua_pushstring(L, "minimum");
@@ -40,6 +38,8 @@ static int memory_new(lua_State* L)
     if (!lua_isnil(L, -1)) {
         limits.max.some = luaL_checkint(L, -1);
         limits.max.has_some = true;
+    } else {
+        limits.max.has_some = false;
     }
     lua_pop(L, 1);
    
@@ -123,10 +123,10 @@ static int memory_get(lua_State* L)
 {
     WasmerMemory* memory = to_memory(L, 1);
     uint8_t* data = (uint8_t*) wasmer_memory_data(memory->mem);
-    int size = wasmer_memory_data_length(memory->mem);
+    size_t size = wasmer_memory_data_length(memory->mem);
     int index = luaL_checkint(L, 2);
 
-    luaL_argcheck(L, 0 <= index && (index + sizeof(T)) <= size, 2, "index out of range");
+    luaL_argcheck(L, 0 <= index && (sizeof(T) + (size_t)index) <= size, 2, "index out of range");
 
     T value;
     memcpy(&value, &data[index], sizeof(value));
@@ -139,10 +139,10 @@ static int memory_set(lua_State* L)
 {
     WasmerMemory* memory = to_memory(L, 1);
     uint8_t* data = (uint8_t*) wasmer_memory_data(memory->mem);
-    int size = wasmer_memory_data_length(memory->mem);
-    int index = luaL_checkint(L, 2);
+    size_t size = wasmer_memory_data_length(memory->mem);
+    int index = (size_t)luaL_checkint(L, 2);
 
-    luaL_argcheck(L, 0 <= index && (index + sizeof(T)) <= size, 2, "index out of range");
+    luaL_argcheck(L, 0 <= index && (sizeof(T) + (size_t)index) <= size, 2, "index out of range");
 
     T value = (T)luaL_checknumber(L, 3);   
     memcpy(&data[index], &value, sizeof(value));
@@ -154,11 +154,11 @@ static int memory_read(lua_State* L)
 {
     WasmerMemory* memory = to_memory(L, 1);
     uint8_t* data = (uint8_t*) wasmer_memory_data(memory->mem);
-    int size = wasmer_memory_data_length(memory->mem);
+    size_t size = wasmer_memory_data_length(memory->mem);
     int index = luaL_checkint(L, 2);
     int length = luaL_checkint(L, 3);
 
-    luaL_argcheck(L, 0 <= index && (index + length) <= size, 2, "index out of range");
+    luaL_argcheck(L, 0 <= length && 0 <= index && (size_t)(index + length) <= size, 2, "index out of range");
 
     lua_pushlstring(L, (const char*)&data[index], length);
     
@@ -169,12 +169,12 @@ static int memory_write(lua_State* L)
 {
     WasmerMemory* memory = to_memory(L, 1);
     uint8_t* data = (uint8_t*) wasmer_memory_data(memory->mem);
-    int size = wasmer_memory_data_length(memory->mem);
-    int index = luaL_checkint(L, 2);
+    size_t size = wasmer_memory_data_length(memory->mem);
+    int index = (size_t)luaL_checkint(L, 2);
     size_t length;
     const char* str = luaL_checklstring(L, 3, &length);
 
-    luaL_argcheck(L, 0 <= index && (index + length) <= size, 2, "index out of range");
+    luaL_argcheck(L, 0 <= index && (length + (size_t)index) <= size, 2, "index out of range");
 
     memcpy(&data[index], str, length);
 

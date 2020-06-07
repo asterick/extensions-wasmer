@@ -36,7 +36,7 @@ void function_from_export(lua_State* L, const wasmer_export_func_t* funct, int i
     function->param_value = new wasmer_value_t[function->param_count];
     wasmer_export_func_params(funct, function->param_type, function->param_count);
 
-    for (int i = 0; i < function->param_count; i++) {
+    for (unsigned int i = 0; i < function->param_count; i++) {
         function->param_value[i].tag = function->param_type[i];
     }
 
@@ -69,7 +69,7 @@ static int function_call(lua_State* L)
 {
     WasmerFunction* funct = to_function(L, 1);
 
-        for (int i = 0; i < funct->param_count; i++) {
+    for (unsigned int i = 0; i < funct->param_count; i++) {
         switch (funct->param_type[i]) {
             case wasmer_value_tag::WASM_I32:
                 funct->param_value[i].value.I32 = (int32_t)lua_tonumber(L, i + 2);
@@ -94,7 +94,7 @@ static int function_call(lua_State* L)
         funct->return_count
     );
     
-    for (int i = 0; i < funct->return_count; i++) {
+    for (unsigned int i = 0; i < funct->return_count; i++) {
         switch (funct->return_value[i].tag) {
             case wasmer_value_tag::WASM_I32:
                 lua_pushinteger(L, funct->return_value[i].value.I32);
