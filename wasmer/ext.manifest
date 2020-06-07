@@ -12,5 +12,4 @@ platforms:
     x86_64-osx:
         context:
             libs: ["wasmer"]
-            linkFlags: ["-force_load"]
             # flags: ["-mmacosx-version-min=10.10"]
