@@ -6,6 +6,17 @@
 #include "function.h"
 #include "instance.h"
 
+#ifdef DM_PLATFORM_LINUX
+#include <errno.h>
+int errno;
+extern "C" int __syscall_error(void)
+{
+    register int err_no __asm__ ("%rcx");
+    errno = err_no;
+    return -1;
+}
+#endif
+
 struct luaL_const {
     const char* name;
     double val;

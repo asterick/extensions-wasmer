@@ -4,7 +4,7 @@ name: "wasmer"
 platforms:
     x86_64-linux:
         context:
-            flags: ["-std=c++11"]
+            flags: ["-std=c++14"]
             libs: ["wasmer", "rt"]
     x86_64-win32:
         context:
@@ -12,4 +12,5 @@ platforms:
     x86_64-osx:
         context:
             libs: ["wasmer"]
+            linkFlags: ["-force_load"]
             # flags: ["-mmacosx-version-min=10.10"]
