@@ -62,8 +62,11 @@ static int function_gc(lua_State* L)
 static int function_tostring(lua_State* L)
 {
     WasmerFunction* function = to_function(L, 1);
-    lua_pushfstring(L, FUNCTION_NAME "('%s')", function->name);
-
+    lua_pushstring(L, FUNCTION_NAME "('");
+    lua_pushlstring(L, function->name, function->name_length);
+    lua_pushstring(L, "')");
+    lua_concat(L, 2);
+        
     return 1;
 }
 
