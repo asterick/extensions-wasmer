@@ -20,7 +20,7 @@ WasmerFunction* to_function (lua_State *L, int index)
     return funct;
 }
 
-void function_from_export(lua_State* L, const wasmer_export_func_t* funct, int index)
+void function_from_export(lua_State* L, const char* name, int name_length, const wasmer_export_func_t* funct, int index)
 {
     lua_pushvalue(L, index);
     int owner = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -30,7 +30,9 @@ void function_from_export(lua_State* L, const wasmer_export_func_t* funct, int i
     lua_setmetatable(L, -2);
     function->function = funct;
     function->owner = owner;
-
+    function->name = name;
+    function->name_length = name_length;
+    
     wasmer_export_func_params_arity(funct, &function->param_count);
     function->param_type = new wasmer_value_tag[function->param_count];
     function->param_value = new wasmer_value_t[function->param_count];
@@ -60,7 +62,7 @@ static int function_gc(lua_State* L)
 static int function_tostring(lua_State* L)
 {
     WasmerFunction* function = to_function(L, 1);
-    lua_pushfstring(L, FUNCTION_NAME "(%i)", (int)(size_t)function);
+    lua_pushfstring(L, "wasmer.%s(%i)", function->name, (int)(size_t)function);
 
     return 1;
 }
